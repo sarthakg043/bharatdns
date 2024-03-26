@@ -29,67 +29,96 @@ def addToWhitelist(new_data):
 def handle_dns_request(request, client_address):
     query_name = str(request.question[0].name)
     print("Query Name: ",query_name)
-    query_type = request.question[0].rdtype
-    received_domain = extract_domain(query_name)
-    received_domain =  received_domain[:-1] 
-    received_domain = extract_domain(query_name)
-    response = dns.message.make_response(request)
-    response.question = request.question 
-    
-    if received_domain in wl_domains.values:
-        print(f"The domain {received_domain} is whitelisted. Proceed with DNS resolution.")
-        # Resolve DNS
-        response = handle_dns_record_type(response, query_name)
+    query_type = request.question[0].rdtype 
+    is_reverse_lookup = query_name.endswith(".in-addr.arpa.")
 
-    elif received_domain in bl_domains.values:
-        print(f"The domain {received_domain} is present in the blacklist file.")
-        print(f"Blocked {received_domain}")
-        # Implement your response for blacklisted domains (e.g., return an error response)
+    if is_reverse_lookup:
+        # Handle reverse DNS lookup
+        print("Reverse DNS lookup request received.")
+        # Extract the IP address from the reverse query name
+        ip_address = query_name.split('.')[0]
+        
+        # Perform reverse DNS resolution to get the domain name
         try:
-            RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
-            response.answer.append(RRset)
-        except:
-            print("Not Resolved, dummy ip sent!")
+            domain_name = socket.gethostbyaddr(ip_address)[0]
+        except socket.herror as e:
+            print(f"Reverse DNS lookup failed: {e}")
+            domain_name = None
+        
+        # Construct DNS response
+        response = dns.message.make_response(request)
+        response.question = request.question
+
+        if domain_name:
+            # If domain name is resolved, add PTR record to response
+            try:
+                RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, dns.rdatatype.PTR, domain_name)
+                response.answer.append(RRset)
+            except Exception as e:
+                print(f"Error adding PTR record to response: {e}")
+        else:
+            # If reverse DNS lookup failed, respond with NXDOMAIN
+            response.set_rcode(dns.rcode.NXDOMAIN)
     else:
-        # Implement your DNS processing logic here
-        # For demonstration, just print a success message
-        print(f"The domain {received_domain} is not blacklisted. Proceed with DNS resolution.")
+        received_domain = extract_domain(query_name)
+        received_domain =  received_domain[:-1] 
+        received_domain = extract_domain(query_name)
+        response = dns.message.make_response(request)
+        response.question = request.question
+        if received_domain in wl_domains.values:
+            print(f"The domain {received_domain} is whitelisted. Proceed with DNS resolution.")
+            # Resolve DNS
+            response = handle_dns_record_type(response, query_name)
 
-        # Implement code for ML model
+        elif received_domain in bl_domains.values:
+            print(f"The domain {received_domain} is present in the blacklist file.")
+            print(f"Blocked {received_domain}")
+            # Implement your response for blacklisted domains (e.g., return an error response)
+            try:
+                RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
+                response.answer.append(RRset)
+            except:
+                print("Not Resolved, dummy ip sent!")
+        else:
+            # Implement your DNS processing logic here
+            # For demonstration, just print a success message
+            print(f"The domain {received_domain} is not blacklisted. Proceed with DNS resolution.")
 
-        # Connect to the ML server's address and port
-        try:
-            received_t = dns_ml_model_predict(query_name)
-            if(received_t[0] == 1 and received_t[1] >=70):
-                # Block only if probability is greater than 70%
-                print(f"ML Model predicted malicious with probability {received_t[1]}%")
-                print(f"Blocked {query_name}")
-                # Implement code for dummy response
-                try:
-                    RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
-                    response.answer.append(RRset)
-                except:
-                    print("Not Resolved, dummy ip sent!")
-            else:          
-                response = handle_dns_record_type(response, query_name)
-                if response.answer:
-                    a_response = [i for i in str(response.answer[0]).split(" ")][4:]
-                    new_data = {'s': 0, 'domain': query_name, 'ip_address': a_response[0]}
-                if response.authority:
-                    soa_response = [i for i in str(response.authority[0]).split(" ")][4:]
-                    soa_response = " ".join(soa_response)[1:]
-                    new_data = {'s': 0, 'domain': query_name, 'ip_address': soa_response}
-                
-                # Update whitelist if resolution successful
-                if(new_data['ip_address'] != "0.0.0.0"):
-                    addToWhitelist(new_data)
+            # Implement code for ML model
+
+            # Connect to the ML server's address and port
+            try:
+                received_t = dns_ml_model_predict(query_name)
+                if(received_t[0] == 1 and received_t[1] >=70):
+                    # Block only if probability is greater than 70%
+                    print(f"ML Model predicted malicious with probability {received_t[1]}%")
+                    print(f"Blocked {query_name}")
+                    # Implement code for dummy response
+                    try:
+                        RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
+                        response.answer.append(RRset)
+                    except:
+                        print("Not Resolved, dummy ip sent!")
+                else:          
+                    response = handle_dns_record_type(response, query_name)
+                    if response.answer:
+                        a_response = [i for i in str(response.answer[0]).split(" ")][4:]
+                        new_data = {'s': 0, 'domain': query_name, 'ip_address': a_response[0]}
+                    if response.authority:
+                        soa_response = [i for i in str(response.authority[0]).split(" ")][4:]
+                        soa_response = " ".join(soa_response)[1:]
+                        new_data = {'s': 0, 'domain': query_name, 'ip_address': soa_response}
                     
-            print("...ML Detection finished.")
-        except:
-            print("ML Model ran into a problem so blocking all requests.")
-            RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
-            response.answer.append(RRset)
-            
+                    # Update whitelist if resolution successful
+                    if(new_data['ip_address'] != "0.0.0.0"):
+                        addToWhitelist(new_data)
+                        
+                print("...ML Detection finished.")
+            except:
+                print("ML Model ran into a problem so blocking all requests.")
+                RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
+                response.answer.append(RRset)
+                
     # Set the query ID of the response message
     response.id = request.id
     print(f"Request of {query_name} is sent back to {client_address} at time {datetime.now()}\n\n")
@@ -108,7 +137,7 @@ def start_dns_server():
             data, client_address = server_socket.recvfrom(1024)
             request = dns.message.from_wire(data)
             
-            handle_dns_request_parallel(request, client_address)
+            handle_dns_request(request, client_address)
         except KeyboardInterrupt:
             break
 
