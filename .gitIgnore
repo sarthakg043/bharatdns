@@ -3,3 +3,4 @@ ml_model_server/__pycache__/
 dns_resolver_server/.DS_Store/
 ml_model_server/.DS_Store/
 .DS_Store
+credentials.json
