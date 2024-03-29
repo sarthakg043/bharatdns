@@ -56,9 +56,13 @@ wl_df= pd.read_csv(os.path.join(script_dir_root, "whitelist.csv"),usecols=['doma
 bl_domains = bl_df['domain'].apply(extract_domain)
 wl_domains = wl_df['domain'].apply(extract_domain)
 
+# #Implement TAXII server fetch and save the data to a file
+# # extract the data from the file and load into recognised_malicious_domains
+# ... code goes here
 
 
 def addToWhitelist(new_data):
+    # once a dns is passed, this function will add it to whitelist for faster resolution next time
     global wl_df, wl_domains
     wl_df = wl_df._append(new_data, ignore_index=True) # Add the resolved domain to whitelist DataFrame
     wl_df.to_csv(os.path.join(script_dir_root, "whitelist.csv"), index=False)  # Save the updated whitelist to CSV
@@ -132,6 +136,18 @@ def handle_dns_request(request, client_address):
                 response.answer.append(RRset)
             except:
                 print("Not Resolved, dummy ip sent!")
+        # # implement elif for recognised malicious DNS by TAXII 
+        # # Here is a code given for the implementation once recognised_malicious_domains has all the list from TAXII
+        # elif received_domain in recognised_malicious_domains.values:
+            # print(f"The domain {received_domain} is a recognised Malicious Domain")
+            # print(f"Blocked {received_domain}")
+            # is_recognised = 1
+            # # Implement your response for Recognised malicious domains (e.g., return an error response)
+            # try:
+            #     RRset = dns.rrset.from_text(query_name, 300, dns.rdataclass.IN, query_type, "0.0.0.0")
+            #     response.answer.append(RRset)
+            # except:
+            #     print("Not Resolved, dummy ip sent!")
         else:
             # Implement your DNS processing logic here
             # For demonstration, just print a success message
