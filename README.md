@@ -2,6 +2,7 @@
 1. move into bharatdns folder
 2. Install dependencies
 ```shell
+pip cache purge
 pip install -r requirements.txt
 ```
 
