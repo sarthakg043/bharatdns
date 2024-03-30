@@ -1,40 +1,19 @@
 from datetime import datetime
 import concurrent.futures
 import socket
-from ml_model_server.dns_tunnelling_model import *
-from dns_resolver_server.paralleldns import *
-import pandas as pd
 import os
+import json
+#firebase
+from firebase_config import *
+authe, database = getFirebaseAPP()
 
-# Firebase realtime database config code
-import firebase_admin
-from firebase_admin import db , credentials 
-
-cred = credentials.Certificate("credentials.json")
-firebase_admin.initialize_app(cred , {"databaseURL" : "https://fir-dns-default-rtdb.firebaseio.com"})
-
-ref = db.reference("/")
-firebase_id = 1
-
-def insert_data(query_name , client_address , resolved, time , malicious , blacklist , whitelist , elapsed_time) :
-    global firebase_id 
-    
-    data = {
-        'query_name': query_name,
-        'client_address': client_address,
-        'resolved_ip': resolved,
-        'time': time,
-        'time_elapsed': elapsed_time,
-        'whitelist': whitelist,
-        'blacklist': blacklist,
-        'malicious': malicious
-    }
-    db.reference(f'requests/{firebase_id}').update(data)
-    firebase_id+=1 
-    # ref.push(data)
+user = authenticate_user(authe)
 
 # firebase 1st code block ends
 
+import pandas as pd
+from ml_model_server.dns_tunnelling_model import *
+from dns_resolver_server.paralleldns import *
 # importing blacklist data domains
 # Get the directory of the current script
 script_dir_root = os.path.dirname(__file__)
@@ -58,6 +37,7 @@ def addToWhitelist(new_data):
 
 
 def handle_dns_request(request, client_address):
+    # global user, database
     start_time = datetime.now()
     query_name = str(request.question[0].name)
     print("Query Name: ",query_name)
@@ -174,11 +154,13 @@ def handle_dns_request(request, client_address):
     elapsed_time = end_time - start_time
     # Insert data into Firebase
     curr_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    final_data = create_data_object(query_name, list(client_address), new_data['ip_address'], str(curr_time), is_malicious, is_blacklist, is_whitelist, str(elapsed_time))
     try:
-        insert_data(query_name, client_address, new_data['ip_address'], str(curr_time), is_malicious, is_blacklist, is_whitelist, str(elapsed_time))
+        input_data(database, user, final_data)
         print("Data sent successfully!\n\n")
     except Exception as e:
-        print("Data could not be sent to server!\n\n", str(e))
+        error_data = json.loads(e.args[1])
+        print("\nData cannot be sent to server:", error_data['error'])
 
 def handle_dns_request_parallel(request, client_address):
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -201,6 +183,7 @@ if __name__ == "__main__":
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_address = ('0.0.0.0', 53)
     server_socket.bind(server_address)
-    
-    print("\nServer listening at{}:{}..\n".format(*server_address))
-    start_dns_server()
+
+    if(user) :
+        print("\nServer listening at{}:{}..\n".format(*server_address))
+        start_dns_server()
