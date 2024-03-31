@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 3. run the server file 
 ```shell
-python bharat_dns_server.py
+python main.py
 ```
 
 It will promt to enter email id and password.
