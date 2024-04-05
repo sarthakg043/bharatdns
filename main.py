@@ -39,7 +39,7 @@ def run_script():
         subprocess.run(install_command, shell=True)
         print("Python 3.11 installed successfully. Running the script...")
         # Now, Python 3.11 should be installed, so run the script
-        subprocess.run([sys.executable, os.path.join("src", "your_script.py")])
+        subprocess.run([sys.executable, os.path.join("src", "harat_dns_server.py")])
 
 if __name__ == "__main__":
     run_script()
