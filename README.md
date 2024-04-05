@@ -18,6 +18,8 @@ The DNS Resolver Server project is a lightweight DNS server implementation desig
 4.  **Error Handling:** Handles DNS resolution errors gracefully, providing informative messages in case of failures or timeouts.
     
 5.  **Flexible Configuration:** Easily configurable server settings, such as the server IP address and port number, allowing for customization based on deployment requirements.
+
+6.  **Parallel Processing:** It implements parallel processing making the service highly scalable as the hardware spec are increased.
     
 
 ### Use Case:
