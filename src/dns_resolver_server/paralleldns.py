@@ -15,9 +15,9 @@ dns_cache = {}
 # Define the cache expiry time in seconds
 CACHE_EXPIRY_TIME = 300  # Set to expire after 5 minutes (adjust as needed)
 
-print("Resolver nameservers: ", end="")
+
 resolver = dns.resolver.Resolver()
-print(resolver.nameservers, "\n")
+
 
 
 
