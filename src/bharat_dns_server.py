@@ -41,7 +41,7 @@ def handle_dns_request(request, client_address):
         # Perform reverse DNS resolution to get the domain name
         try:
             domain_name = socket.gethostbyaddr(ip_address)[0]
-        except socket.herror as e:
+        except socket.gaierror as e:
             print(f"Reverse DNS lookup failed: {e}")
             domain_name = None
         
@@ -160,6 +160,8 @@ def start_dns_server():
             request = dns.message.from_wire(data)
             
             handle_dns_request_parallel(request, client_address)
+        except ConnectionResetError:
+            pass
         except KeyboardInterrupt:
             break
 
