@@ -50,16 +50,27 @@ ___
 ### You can create a virtual environment with python 3.11 then clone this github repo
 
 1. move into bharatdns folder
-2. Install dependencies
-```shell
-pip cache purge
-pip install -r requirements.txt
-```
-
-3. run the server file 
+2. run the server file 
 ```shell
 python main.py
 ```
+It will install all required dependencies.
+
+
+### In case of Windows errors:
+- If an Error occurs for enabling long paths in Windows 10/11, then you need to update your Registry file (.reg)
+```shell
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem]
+"LongPathsEnabled"=dword:00000001
+
+```
+- for this, you can open `Powershell` in Administrator mode and run followinf command
+```shell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+- and run `python ./main.py` again
 
 It will promt to enter email id and password.
 Then, It will start a udp server on your PC.
