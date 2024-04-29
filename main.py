@@ -4,12 +4,34 @@ import os
 import re
 
 def install_requirements(requirements_file):
+    # Read the content of requirements file
+    with open(requirements_file, 'r') as file:
+        requirements = file.readlines()
+    exclude_packages = None
+    
+    if sys.platform == "win32": 
+        exclude_packages = ["tensorflow_macos"]  # Exclude tensorflow_macos package on Windows
+
+    # Exclude specified packages
+    if exclude_packages:
+        requirements = [line for line in requirements if not any(exclude_pkg in line for exclude_pkg in exclude_packages)]
+
+    # Write the modified requirements content to a temporary file
+    temp_file = requirements_file + ".tmp"
+    with open(temp_file, 'w') as file:
+        file.writelines(requirements)
+
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_file])
+        # Install requirements from the modified temporary file
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", temp_file])
         print("Requirements installed successfully.")
     except subprocess.CalledProcessError as e:
         print("Error: Failed to install requirements.")
         print(e)
+    finally:
+        # Delete the temporary file
+        import os
+        os.remove(temp_file)
 
 def run_script():
     # Check if Python 3.11 is installed
