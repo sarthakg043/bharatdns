@@ -3,10 +3,20 @@ import sys
 import os
 import re
 
+def install_requirements(requirements_file):
+    try:
+        subprocess.check_call(["pip3.11", "install", "-r", requirements_file])
+        print("Requirements installed successfully.")
+    except subprocess.CalledProcessError as e:
+        print("Error: Failed to install requirements.")
+        print(e)
+
 def run_script():
     # Check if Python 3.11 is installed
     if sys.version_info >= (3, 11):
         # If installed, run the script in src folder
+        requirements_file = "requirements.txt"  # Change this to the path of your requirements.txt file
+        install_requirements(requirements_file)
         subprocess.run([sys.executable, os.path.join("src", "bharat_dns_server.py")])
     else:
         print("Python 3.11 is not installed. Installing...")
