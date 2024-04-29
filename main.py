@@ -5,7 +5,7 @@ import re
 
 def install_requirements(requirements_file):
     try:
-        subprocess.check_call(["pip3.11", "install", "-r", requirements_file])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_file])
         print("Requirements installed successfully.")
     except subprocess.CalledProcessError as e:
         print("Error: Failed to install requirements.")
