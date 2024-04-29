@@ -8,8 +8,8 @@ def install_requirements(requirements_file):
     with open(requirements_file, 'r') as file:
         requirements = file.readlines()
     exclude_packages = None
-    
-    if sys.platform == "win32": 
+
+    if sys.platform != "darwin": 
         exclude_packages = ["tensorflow_macos"]  # Exclude tensorflow_macos package on Windows
 
     # Exclude specified packages
