@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import re
 
 def run_script():
     # Check if Python 3.11 is installed

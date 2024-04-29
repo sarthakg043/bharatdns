@@ -3,29 +3,13 @@ import concurrent.futures
 import socket
 import os
 import json
+import sys
+
 #firebase
 from firebase_config import *
 authe, database = getFirebaseAPP()
-
 user = authenticate_user(authe)
-
 # firebase 1st code block ends
-
-import pandas as pd
-from ml_model_server.dns_tunnelling_model import *
-from dns_resolver_server.paralleldns import *
-# importing blacklist data domains
-# Get the directory of the current script
-script_dir_root = os.path.dirname(__file__)
-# Construct the full path to the CSV file
-# Read the CSV file using pandas
-bl_df = pd.read_csv(os.path.join(script_dir_root, "blacklist.csv"), usecols=['domain'])
-wl_df= pd.read_csv(os.path.join(script_dir_root, "whitelist.csv"),usecols=['domain'])
-
-bl_domains = bl_df['domain'].apply(extract_domain)
-wl_domains = wl_df['domain'].apply(extract_domain)
-
-
 
 def addToWhitelist(new_data):
     global wl_df, wl_domains
@@ -179,9 +163,46 @@ def start_dns_server():
         except KeyboardInterrupt:
             break
 
+def get_host_ip():
+    try:
+        # Get the IP address by connecting to a remote server
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Connect to Google's public DNS server
+        ip_address = s.getsockname()[0]
+        s.close()
+        return ip_address
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+# data reading
+import pandas as pd
+from ml_model_server.dns_tunnelling_model import *
+from dns_resolver_server.paralleldns import *
+# importing blacklist data domains
+# Get the directory of the current script
+script_dir_root = os.path.dirname(__file__)
+# Construct the full path to the CSV file
+# Read the CSV file using pandas
+bl_df = pd.read_csv(os.path.join(script_dir_root, "blacklist.csv"), usecols=['domain'])
+wl_df= pd.read_csv(os.path.join(script_dir_root, "whitelist.csv"),usecols=['domain'])
+
+bl_domains = bl_df['domain'].apply(extract_domain)
+wl_domains = wl_df['domain'].apply(extract_domain)
+
 if __name__ == "__main__":
+    ipv4_addresses = None
+    if sys.platform == "win32":
+        # Call the function to extract and print IPv4 addresses
+        ipv4_addresses = get_host_ip()
+        if ipv4_addresses:
+            print("IPv4 addresses found in ifconfig of machine:", ipv4_addresses)
+        else:
+            print("No IPv4 addresses found in ifconfig output.")
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = ('0.0.0.0', 53)
+    # Call the function to extract and print IPv4 addresses from ifconfig output
+    server_address = (str(ipv4_addresses if ipv4_addresses else '0.0.0.0'), 53)
     server_socket.bind(server_address)
 
     if(user) :
